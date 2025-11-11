@@ -1,0 +1,14 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    container_name: bank-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: bankdb
+      POSTGRES_USER: bankuser
+      POSTGRES_PASSWORD: bankpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
