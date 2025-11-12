@@ -3,8 +3,7 @@ package mrk.adapters.persistence.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import mrk.adapters.persistence.entity.enums.UserRole;
 import mrk.adapters.persistence.entity.enums.UserStatus;
 import org.hibernate.annotations.CreationTimestamp;
@@ -25,6 +24,9 @@ public class User {
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
+
+    @Column(nullable = false)
+    private boolean emailVerified = false;
 
     @Column(nullable = false, length = 255)
     @NotBlank

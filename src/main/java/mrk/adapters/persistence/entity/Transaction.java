@@ -3,6 +3,8 @@ package mrk.adapters.persistence.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import mrk.adapters.persistence.entity.enums.TransactionState;
+import mrk.adapters.persistence.entity.enums.TransactionType;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -20,8 +22,9 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(nullable = false, length = 20)
-    private String type; // DEPOSIT, WITHDRAWAL, TRANSFER, etc.
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private TransactionType type;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_account_id")
@@ -47,10 +50,11 @@ public class Transaction {
     @Column(name = "idempotency_key", unique = true, length = 100)
     private String idempotencyKey;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String state = "POSTED";
+    private TransactionState state = TransactionState.POSTED;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "related_txn_id")
     private Transaction relatedTransaction;
 

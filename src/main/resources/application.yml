@@ -10,3 +10,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+jwt:
+  secret: fdjjfwuhdbwseuhwsdnswnrwudnwdmtigmzmdhahagjs
+  expiration: 3600000 # 1 час

@@ -63,4 +63,11 @@ public class Account {
 
     @OneToMany(mappedBy = "toAccount")
     private List<Transaction> incomingTransactions = new ArrayList<>();
+
+    @PrePersist
+    void prePersist() {
+        if (balance == null) balance = BigDecimal.ZERO;
+        if (creditLimit == null) creditLimit = BigDecimal.ZERO;
+        if (dailyLimit == null) dailyLimit = new BigDecimal("500000");
+    }
 }

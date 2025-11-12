@@ -2,6 +2,7 @@ package mrk.adapters.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import mrk.adapters.persistence.entity.enums.OperationType;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -17,8 +18,9 @@ public class FeeRule {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(name = "operation_type", nullable = false, length = 20)
-    private String operationType;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private OperationType operationType;
 
     @Column(name = "percent_fee", precision = 5, scale = 2)
     private BigDecimal percentFee = BigDecimal.ZERO;

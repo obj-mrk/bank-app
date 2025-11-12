@@ -9,7 +9,6 @@ import java.util.UUID;
 @Table(name = "password_reset_tokens")
 @Getter @Setter
 public class PasswordResetToken {
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
@@ -26,4 +25,8 @@ public class PasswordResetToken {
 
     @Column(nullable = false)
     private boolean used = false;
+
+    public boolean isExpired() {
+        return Instant.now().isAfter(expiresAt);
+    }
 }
