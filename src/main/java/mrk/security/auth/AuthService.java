@@ -1,9 +1,10 @@
 package mrk.security.auth;
 
 import lombok.RequiredArgsConstructor;
-import mrk.adapters.persistence.entity.User;
-import mrk.adapters.persistence.entity.enums.UserRole;
-import mrk.adapters.persistence.repo.UserRepository;
+import mrk.adapters.persistence.entity.UserEntity;
+import mrk.common.errors.impl.ValidationException;
+import mrk.domain.model.enums.UserRole;
+import mrk.adapters.persistence.repo.UserJpaRepository;
 import mrk.security.jwt.JwtService;
 import mrk.security.user.CustomUserDetails;
 import mrk.security.user.dto.AuthResponse;
@@ -14,29 +15,34 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final UserRepository userRepository;
+    private final UserJpaRepository userJpaRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email already registered");
+        if (userJpaRepository.existsByEmail(request.email())) {
+            throw new ValidationException("Email already registered");
         }
 
-        User user = new User();
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setName(request.name());
-        user.setPhone(request.phone());
-        user.setAddress(request.address());
-        user.setRole(UserRole.USER);
-        userRepository.save(user);
+        UserEntity userEntity = new UserEntity();
 
-        String token = jwtService.generateToken(new CustomUserDetails(user.getId(), user.getEmail(), user.getPassword(), user.getRole()));
+        userEntity.setId(UUID.randomUUID());
+
+        userEntity.setEmail(request.email());
+        userEntity.setPassword(passwordEncoder.encode(request.password()));
+        userEntity.setName(request.name());
+        userEntity.setPhone(request.phone());
+        userEntity.setAddress(request.address());
+        userEntity.setRole(UserRole.USER);
+        userJpaRepository.save(userEntity);
+
+        String token = jwtService.generateToken(new CustomUserDetails(userEntity.getId(), userEntity.getEmail(), userEntity.getPassword(), userEntity.getRole()));
         return new AuthResponse(token);
     }
 
@@ -44,8 +50,8 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
-        User user = userRepository.findByEmail(request.email()).orElseThrow();
-        String token = jwtService.generateToken(new CustomUserDetails(user.getId(), user.getEmail(), user.getPassword(), user.getRole()));
+        UserEntity userEntity = userJpaRepository.findByEmail(request.email()).orElseThrow();
+        String token = jwtService.generateToken(new CustomUserDetails(userEntity.getId(), userEntity.getEmail(), userEntity.getPassword(), userEntity.getRole()));
         return new AuthResponse(token);
     }
 }
