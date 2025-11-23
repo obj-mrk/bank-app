@@ -1,7 +1,7 @@
 package mrk.security.user;
 
 import lombok.*;
-import mrk.adapters.persistence.entity.enums.UserRole;
+import mrk.domain.model.enums.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
