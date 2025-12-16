@@ -37,7 +37,6 @@ public class Transaction {
         Objects.requireNonNull(toAccountId);
         Objects.requireNonNull(amount);
         Objects.requireNonNull(initiatedBy);
-        Objects.requireNonNull(idempotencyKey);
         Objects.requireNonNull(createdAt);
 
         if (!amount.isPositive()) {
@@ -103,7 +102,6 @@ public class Transaction {
         Objects.requireNonNull(toAccountId);
         Objects.requireNonNull(amount);
         Objects.requireNonNull(initiatedBy);
-        Objects.requireNonNull(idempotencyKey);
         Objects.requireNonNull(createdAt);
 
         if (!amount.isPositive()) {
@@ -137,7 +135,6 @@ public class Transaction {
         Objects.requireNonNull(fromAccountId);
         Objects.requireNonNull(amount);
         Objects.requireNonNull(initiatedBy);
-        Objects.requireNonNull(idempotencyKey);
 
         if (!amount.isPositive()) {
             throw new InvalidTransactionException("Commission amount must be positive");

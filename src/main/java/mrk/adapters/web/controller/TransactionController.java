@@ -6,6 +6,7 @@ import mrk.adapters.web.dto.DepositRequestDto;
 import mrk.adapters.web.dto.TransferRequestDto;
 import mrk.adapters.web.dto.TransactionResponseDto;
 import mrk.adapters.web.dto.WithdrawRequestDto;
+import mrk.adapters.web.security.user.AuthUserIdExtractor;
 import mrk.application.usecase.DepositUseCase;
 import mrk.application.usecase.TransferUseCase;
 import mrk.application.usecase.WithdrawUseCase;
@@ -13,7 +14,6 @@ import mrk.application.usecase.command.DepositCommand;
 import mrk.application.usecase.command.TransferCommand;
 import mrk.application.usecase.command.WithdrawCommand;
 import mrk.domain.model.Money;
-import mrk.security.user.CustomUserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,7 +36,7 @@ public class TransactionController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Authentication authentication
     ) {
-        UUID userId = extractUserId(authentication);
+        UUID userId = AuthUserIdExtractor.userId(authentication);
 
         Money amount = Money.of(request.amount(), request.currency());
 
@@ -60,7 +60,7 @@ public class TransactionController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Authentication authentication
     ) {
-        UUID userId = extractUserId(authentication);
+        UUID userId = AuthUserIdExtractor.userId(authentication);
 
         Money amount = Money.of(request.amount(), request.currency());
 
@@ -84,7 +84,7 @@ public class TransactionController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             Authentication authentication
     ) {
-        UUID userId = extractUserId(authentication);
+        UUID userId = AuthUserIdExtractor.userId(authentication);
 
         Money amount = Money.of(request.amount(), request.currency());
 
@@ -99,12 +99,5 @@ public class TransactionController {
         var txn = transferUseCase.execute(command);
 
         return TransactionResponseDto.fromDomain(txn);
-    }
-
-    // ---------- Вспомогательный метод извлечения userId ----------
-
-    private UUID extractUserId(Authentication authentication) {
-        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
-        return principal.getId();
     }
 }

@@ -1,6 +1,9 @@
 package mrk.application.usecase;
 
 import lombok.RequiredArgsConstructor;
+import mrk.application.port.AccountNumberGenerator;
+import mrk.application.port.ClockProvider;
+import mrk.application.port.IdGenerator;
 import mrk.application.usecase.command.OpenAccountCommand;
 import mrk.common.errors.impl.InvalidUserException;
 import mrk.common.errors.impl.NotFoundException;
@@ -16,6 +19,10 @@ public class OpenAccountUseCase {
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
 
+    private final IdGenerator idGenerator;
+    private final AccountNumberGenerator numberGenerator;
+    private final ClockProvider clock;
+
     @Transactional
     public Account execute(OpenAccountCommand cmd) {
         var user = userRepository.findById(cmd.userId())
@@ -26,14 +33,14 @@ public class OpenAccountUseCase {
         }
 
         var account = Account.createAccount(
-                cmd.accountId(),
+                idGenerator.next(),
                 cmd.userId(),
                 cmd.type(),
-                cmd.number(),
+                numberGenerator.next(),
                 cmd.initialBalance(),
                 cmd.creditLimit(),
                 cmd.dailyLimit(),
-                cmd.createdAt()
+                clock.now()
         );
 
         return accountRepository.save(account);

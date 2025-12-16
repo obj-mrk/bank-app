@@ -1,6 +1,9 @@
 package mrk.application.usecase;
 
 import lombok.RequiredArgsConstructor;
+import mrk.application.port.ClockProvider;
+import mrk.application.port.IdGenerator;
+import mrk.application.service.IdempotencyService;
 import mrk.application.usecase.command.TransferCommand;
 import mrk.common.errors.impl.NotFoundException;
 import mrk.domain.model.Transaction;
@@ -9,24 +12,21 @@ import mrk.domain.port.TransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class TransferUseCase {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
+    private final IdempotencyService idempotencyService;
+    private final IdGenerator idGenerator;
+    private final ClockProvider clock;
+
     @Transactional
     public Transaction execute(TransferCommand cmd) {
-
-        if (cmd.idempotencyKey() != null && !cmd.idempotencyKey().isBlank()) {
-            var existing = transactionRepository.findByIdempotencyKey(cmd.idempotencyKey());
-            if (existing.isPresent()) {
-                return existing.get();
-            }
-        }
+        // Идемпотентность (если ключ передан)
+        var existing = idempotencyService.findExisting(cmd.idempotencyKey());
+        if (existing.isPresent()) return existing.get();
 
         // Загружаем счета в фиксированном порядке, чтобы избежать дедлоков
         var firstId = cmd.fromAccountId().compareTo(cmd.toAccountId()) < 0
@@ -54,13 +54,13 @@ public class TransferUseCase {
         accountRepository.save(to);
 
         var txn = Transaction.createTransfer(
-                UUID.randomUUID(),
+                idGenerator.next(),
                 from.getId(),
                 to.getId(),
                 cmd.amount(),
                 cmd.initiatedByUserId(),
                 cmd.idempotencyKey(),
-                Instant.now()
+                clock.now()
         );
 
         txn.markPosted();

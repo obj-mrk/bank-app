@@ -7,6 +7,6 @@ import org.springframework.http.HttpStatus;
 public class AccountStatusException extends ErrorException {
 
     public AccountStatusException(String message) {
-        super(ErrorCode.ACCOUNT_FROZEN, message, HttpStatus.BAD_REQUEST);
+        super(ErrorCode.INVALID_ACCOUNT, message, HttpStatus.BAD_REQUEST);
     }
 }

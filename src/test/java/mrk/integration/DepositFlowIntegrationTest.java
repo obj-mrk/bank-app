@@ -10,21 +10,20 @@ import mrk.domain.model.enums.AccountType;
 import mrk.domain.model.enums.CurrencyType;
 import mrk.domain.port.AccountRepository;
 import mrk.domain.port.UserRepository;
-import mrk.security.auth.AuthService;
-import mrk.security.user.dto.RegisterRequest;
+import mrk.adapters.web.security.auth.AuthService;
+import mrk.adapters.web.security.user.dto.RegisterRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Пример “правильного” интеграционного теста:
+ * Интеграционный тест:
  * - создаём пользователя через боевой AuthService
- * - работаем с доменными портами / use-case слоями
+ * - работаем через application use-case’ы и domain ports
  * - не трогаем JPA-сущности напрямую
  */
 class DepositFlowIntegrationTest extends AbstractIntegrationTest {
@@ -44,24 +43,17 @@ class DepositFlowIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private AccountRepository accountRepository;
 
-    /**
-     * Утилита для регистрации пользователя в тесте через боевой AuthService.
-     * Возвращает id созданного пользователя как доменной модели.
-     */
     private UUID registerTestUserAndGetId(String email) {
-        // DTO из security-слоя
         RegisterRequest request = new RegisterRequest(
                 email,
-                "P@ssw0rd!",          // тестовый пароль
-                "Integration User",   // имя
-                "+79990000000",       // телефон
-                "Test address"        // адрес
+                "P@ssw0rd!",
+                "Integration User",
+                "+79990000000",
+                "Test address"
         );
 
-        // создаёт UserEntity в БД и возвращает JWT, который нам здесь не нужен
-        authService.register(request);  // AuthService.save + PasswordEncoder + JwtService
+        authService.register(request);
 
-        // затем через доменный порт получаем доменного пользователя
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("User not found after register"))
                 .getId();
@@ -69,47 +61,45 @@ class DepositFlowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void depositFlow_shouldIncreaseBalance() {
-        // -------- 1. создаём пользователя через AuthService --------
+        // -------- 1. создаём пользователя --------
         String email = "it-" + UUID.randomUUID() + "@example.com";
         UUID userId = registerTestUserAndGetId(email);
 
-        // -------- 2. открываем счет через доменный use case --------
-        UUID accountId = UUID.randomUUID();
-
+        // -------- 2. открываем счет (use-case генерит id/номер/createdAt) --------
         Money initialBalance = Money.of(BigDecimal.ZERO, CurrencyType.RUB);
         Money creditLimit    = Money.of(new BigDecimal("100000.00"), CurrencyType.RUB);
         Money dailyLimit     = Money.of(new BigDecimal("50000.00"), CurrencyType.RUB);
 
         OpenAccountCommand openCmd = new OpenAccountCommand(
-                accountId,
                 userId,
                 AccountType.CHECKING,
-                "ACC-" + accountId.toString().substring(0, 8),
                 initialBalance,
                 creditLimit,
-                dailyLimit,
-                Instant.now()
+                dailyLimit
         );
 
         Account opened = openAccountUseCase.execute(openCmd);
-        assertThat(opened.getId()).isEqualTo(accountId);
+
+        assertThat(opened.getId()).as("accountId должен быть сгенерирован").isNotNull();
         assertThat(opened.getBalance().getAmount())
                 .as("начальный баланс должен быть 0.00")
                 .isEqualByComparingTo("0.00");
 
-        // -------- 3. выполняем депозит через доменный use case --------
+        UUID accountId = opened.getId();
+
+        // -------- 3. выполняем депозит --------
         Money depositAmount = Money.of(new BigDecimal("1000.00"), CurrencyType.RUB);
 
         DepositCommand depositCmd = new DepositCommand(
                 accountId,
                 depositAmount,
                 userId,
-                "idem-" + UUID.randomUUID()  // идемпотентный ключ
+                "idem-" + UUID.randomUUID()
         );
 
         depositUseCase.execute(depositCmd);
 
-        // -------- 4. перечитываем счет через доменный репозиторий --------
+        // -------- 4. перечитываем счет и проверяем баланс --------
         Account reloaded = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AssertionError("Account not found after deposit"));
 
